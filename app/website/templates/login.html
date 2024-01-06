@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+
+{% block title %}Log in - Speelfe Bank{% endblock %}
+
+{% block content %}
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <style>
+        .central_div {
+            position: absolute;
+            top: 20%;
+            left: 31%;
+            background-color: #6d9265;
+            height: 400px;
+            border-top-left-radius: 2%;
+            border-top-right-radius: 2%;
+
+        }
+
+        .bottom_div {
+            position: absolute;
+            top: 100%;
+            width: 100%;
+            height: 25%;
+            background-color: #ECE3CE;
+            border-radius: 2px;
+
+        }
+
+        #startvidbutton {
+            position: absolute;
+            bottom: 14%;
+            left: 43%;
+        }
+
+        #capturefacebtn {
+            position: absolute;
+            bottom: 24%;
+            left: 42%;
+        }
+
+        #username {
+            position: absolute;
+            top: 5%;
+            left: 36%;
+        }
+
+        .form-control {
+            max-width: 200px;
+        }
+    </style>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition</title>
+
+</head>
+
+<body>
+
+    <div class="central_div">
+        
+        <canvas id="videofeed" width="640" height="480"></canvas>
+        <input type="hidden" name="img" id="img">
+        <div class="bottom_div">
+            <input type="text" id="username" placeholder="Enter your username" class="form-control">
+            <button type="button" id="startvidbutton" onclick="startVideo()" class="btn btn-primary">Start
+                Video</button>
+            <button type="button" id="capturefacebtn" onclick="sendFaceImageToServer()" style="display: none;"
+                class="btn btn-primary">Capture Face</button>
+        </div>
+    </div>
+    <div class="modal" id="loginModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Enter Details</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="loginForm">
+                        <label for="password">Password:</label>
+                        <input type="password" name="password" id="password" required>
+                        <div id="alertContainer"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="confirmLogin()">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+
+    <script type="text/javascript">
+
+        let username = null;
+
+        function startVideo() {
+            let username = document.getElementById('username').value;
+            $.ajax({
+                type: 'POST',
+                url: '/get_user_data',
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify({ 'username': username }),
+                success: function (response) {
+                    if (response.status === 'success') {
+                        // Успешно получены данные пользователя
+                        // Скрываем поле для ввода username и кнопку Start Video
+                        document.getElementById('username').style.display = 'none';
+                        document.getElementById('startvidbutton').style.display = 'none';
+
+                        // Отображаем кнопку "Capture Face"
+                        document.getElementById('capturefacebtn').style.display = 'block';
+
+                        // Логика для начала видеозахвата
+                        navigator.mediaDevices.getUserMedia({ video: true })
+                            .then(function (stream) {
+                                // Отображение видеозахвата на canvas
+                                let video = document.createElement('video');
+                                video.srcObject = stream;
+                                video.play();
+
+                                // Получаем существующий canvas
+                                let canvas = document.getElementById('videofeed');
+                                let context = canvas.getContext('2d');
+
+                                // Отрисовка каждого кадра видео на canvas
+                                video.addEventListener('loadedmetadata', function () {
+                                    canvas.width = video.videoWidth;
+                                    canvas.height = video.videoHeight;
+
+                                    capturing = true;
+                                    drawFrame();
+                                });
+
+                                function drawFrame() {
+                                    if (capturing) {
+                                        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                                        requestAnimationFrame(drawFrame);
+                                    }
+                                }
+                            })
+                            .catch(function (error) {
+                                console.error('Failed to start video capture:', error);
+                            });
+                    } else {
+                        // Ошибка: пользователь не найден
+                        console.error(response.message);
+                    }
+                },
+                error: function (error) {
+                    console.error('Failed to retrieve user data:', error);
+                }
+            });
+        }
+
+        let isImageSent = false;
+
+
+
+
+        async function sendFaceImageToServer() {
+            try {
+                let canvas = document.getElementById('videofeed');
+                let blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+
+                // Формирование полного URL к изображению из папки uploads
+                let imageUrl = `http://localhost:3000/uploads/upload_${username}.jpg`;
+                let formData = new FormData();
+                formData.append('user_image', blob, 'user_image.png');
+
+                $.ajax({
+                    type: 'POST',
+                    url: '/get_face_image',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: {
+                        'Image-URL': imageUrl
+                    },
+                    success: function (response) {
+                        if (response.match) {
+                            console.log(response.message);
+                            displayPasswordModal();
+                        } else {
+                            console.error(response.message);
+                        }
+                    },
+                    error: function (error) {
+                        console.error('Failed to upload image:', error);
+                    }
+                });
+            } catch (error) {
+                console.error('Error in sending face image:', error);
+            }
+        }
+
+
+        function displayPasswordModal() {
+            $('#loginModal').modal('show');
+        }
+
+        function confirmLogin() {
+            var password = document.getElementById('password').value;
+
+            $.ajax({
+                type: 'POST',
+                url: '/get_password',
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify({ password: password }), // Здесь отправляем пароль как часть объекта данных
+                success: function (response) {
+                    if (response.status === 'success') {
+                        var alertContainer = document.getElementById('alertContainer');
+                        alertContainer.innerHTML = '<div class="alert alert-success">Вход прошел успешно!</div>';
+                    } else {
+                        // Ошибка аутентификации
+                        console.error(response.message);
+                        capturing = false;
+                    }
+                },
+                error: function (error) {
+                    console.error('Failed to confirm login:', error);
+                }
+            });
+
+            $('#loginModal').modal('hide');
+            setTimeout(function () {
+                window.location.href = "/";
+            }, 3000);
+        }
+
+
+    </script>
+
+
+</body>
+
+</html>
+
+{% endblock %}

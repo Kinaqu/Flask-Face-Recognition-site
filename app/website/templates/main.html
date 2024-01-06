@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speelfe Bank</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet">
+
+    <style> 
+
+        .bg {
+            width: 100%;
+            height: 100vh;
+            background-size: 300% 300%;
+            background-image: linear-gradient(-45deg, #e9e2d2 0%, #fff 25%, #e9e2d2 51%, #95c789 100%);
+            -webkit-animation: AnimateBG 20s ease infinite;
+            animation: AnimateBG 20s ease infinite;
+        }
+
+        @-webkit-keyframes AnimateBG {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        @keyframes AnimateBG {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+
+
+
+
+
+
+    </style>
+</head>
+<body class="bg">
+        <div style="height: 200px;"></div>
+        <div style="font-family: 'Montserrat', sans-serif;  font-size: 170px; color: #192517;" align="center">Face Recognition</div>
+                    <h1 style="color: #192517;" align="center">Добро пожаловать на сайт нашего проекта!</h1>
+                    <p style="color: #192517;" align="center">Здесь вы можете опробовать технологию распознавания лица</p>
+                    <div align="center">
+                        {% if current_user.is_authenticated %}
+                        <p style="color: #192517;">Вы успешно вошли в аккаунт!</p>
+                        <a href="{{ url_for('auth_profile.profile') }}" class="btn btn-primary" >Профиль</a>
+                        {% else %}
+
+                        <p style="color: #192517;">Чтобы начать пользоваться, зарегистрируйтесь или войдите в аккаунт</p>
+                        <a href="{{ url_for('auth_login.login') }}" class="btn btn-outline-primary me-2" >Войти в аккаунт</a>
+                        <a href="{{ url_for('auth_signup.signup') }}" class="btn btn-primary" >Зарегистрироваться</a>
+                        {% endif %}
+        </div>
+
+
+
+
+
+
+</body>
+</html>
+</html>
+
+
+{% endblock %}

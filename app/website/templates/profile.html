@@ -1,0 +1,376 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - Speelfe Bank{% endblock %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+       <!-- Bootstrap reboot (для сброса стилей) -->
+       <link rel="stylesheet" href="libs/bootstrap-reboot.min.css">
+       
+       <!-- Bootstrap сетка -->
+       <link rel="stylesheet" href="libs/bootstrap-grid.min.css">
+       
+       <!-- Шрифты с Google Fonts -->
+       <link rel="preconnect" href="https://fonts.gstatic.com">
+       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+         <!-- Bootstrap CSS -->
+         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+       
+         <!-- Google Fonts -->
+         <link rel="preconnect" href="https://fonts.googleapis.com">
+         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .profile-section {
+            background-color: #9fc098;
+            width: 500px;
+            position: absolute;
+            top: 100px;
+            left: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-radius: 10px;
+            border: 1px solid #42553e;
+        }
+
+        body {
+            padding-top: 60px;
+        }
+
+        .image-div {
+            margin-bottom: 20px;
+            text-align: center; /* Center aligning the image and button */
+            border-radius: 10px;
+
+        }
+
+        .content {
+            padding-top: 60px;
+        }
+
+        .image-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            
+        }
+
+        .button-div {
+            flex-shrink: 0;
+            margin-top: 10px;
+        }
+
+        #profile-image {
+            margin-top: 10px;
+            width: 60%;
+            height: 60%;
+        }
+
+        h2, p {
+            text-align: center;
+        }
+
+        button {
+            margin: 3px;
+        }
+
+        /* Added styling for dynamically displayed elements */
+        #passwordFields,
+        #message {
+            display: none;
+            text-align: center;
+        }
+
+        #passwordFields input,
+        #passwordFields button,
+        #message {
+            margin: 10px;
+        }
+        .hidden {
+            display: none;
+        }
+        #parser-section {
+            position: absolute;
+            right: 200px;
+            top: 100px;
+            width: 500px; /* Adjusted width */
+            height: 665px; /* Adjusted height */
+            border: 1px solid #42553e;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+            padding: 20px;
+            overflow: auto;
+        }  
+    </style>
+</head>
+
+<body>
+
+    <!-- Левая часть страницы с профилем -->
+    <div class="profile-section">
+        <img id="profile-image"
+            src="{{ url_for('static', filename='uploads/photo/profile_' + user.username + '.jpg') }}"
+            alt="Profile Image" height="300" width="300">
+        <h2 id="username">{{ user.username }}</h2>
+        <p><strong>Дата:</strong> <span id="birth-date">{{ profile_info.birth_date }}</span></p>
+        <p><strong>Опыт работы:</strong> <span id="experience">{{ profile_info.experience }}</span></p>
+        <p><strong>Должность:</strong> <span id="position">{{ profile_info.position }}</span></p>
+        <p><strong>Email:</strong> <span id="email">{{ profile_info.email }}</span></p>
+        <button class="btn btn-primary" id="update-profile">Обновить профиль</button>
+        <input type="file" id="profileImageInput" accept=".jpg" style="display: none;">
+        <button class="btn btn-primary" id="uploadImageButton">Обновить фото</button>
+        <div id="message"></div>
+        <button class="btn btn-primary" id="showPasswordFieldsBtn">Сменить пароль</button>
+        <div id="passwordFields" style="display: none;">
+            <input type="password" id="oldPassword" placeholder="Old Password">
+            <input type="password" id="newPassword" placeholder="New Password">
+            <button class="btn btn-primary" id="changePasswordBtn">Принять</button>
+        </div>
+        <button  class="btn btn-danger" id="logout">Выход</button>
+        <button class="btn btn-danger " id="deleteAccountBtn">Удалить  аккаунт</button>
+    </div>
+
+    <!-- Правая часть страницы с divами для изображений -->
+    <div id="parser-section">
+        <h2>parser hackers</h2>
+
+        {% for image in image_list %}
+        <div class="image-div">
+            <img style="width: 50%; height: 50%;" src="{{ url_for('static', filename='uploads/' + image) }}" alt="Uploaded Image"
+                data-image-name="{{ image }}">
+            <div class="button-div">
+                <button class="btn btn-primary compare-btn">Try Compare</button>
+                <div class="message"></div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Функция для переключения режима редактирования профиля
+            document.getElementById('update-profile').addEventListener('click', function () {
+                const birthDateElement = document.getElementById('birth-date');
+                const positionElement = document.getElementById('position');
+                const experienceElement = document.getElementById('experience');
+                const emailElement = document.getElementById('email');
+
+                // Замена текстовых полей на input поля для редактирования
+                birthDateElement.innerHTML = `<input type="date" id="edit-birth-date" value="${birthDateElement.textContent}">`;
+                positionElement.innerHTML = `<input type="text" id="edit-position" value="${positionElement.innerText}">`;
+                experienceElement.innerHTML = `<input type="text" id="edit-experience" value="${experienceElement.innerText}">`;
+                emailElement.innerHTML = `<input type="email" id="edit-email" value="${emailElement.innerText}">`;
+
+                // Добавление кнопки "Save" и удаление текущей кнопки "Update Profile"
+                const saveButton = document.createElement('button');
+                saveButton.innerText = 'Save';
+                saveButton.id = 'save-profile';
+                saveButton.className = 'btn btn-primary';
+                document.querySelector('.profile-section').appendChild(saveButton);
+                document.getElementById('update-profile').remove();
+
+                // Обработка нажатия на кнопку "Save"
+                saveButton.addEventListener('click', function () {
+                    const updatedBirthDate = document.getElementById('edit-birth-date').value;
+                    const updatedPosition = document.getElementById('edit-position').value;
+                    const updatedExperience = document.getElementById('edit-experience').value;
+                    const updatedEmail = document.getElementById('edit-email').value;
+
+                    console.log({
+                        birth_date: updatedBirthDate,
+                        position: updatedPosition,
+                        experience: updatedExperience,
+                        email: updatedEmail
+                    });
+
+                    fetch('/update_profile', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            birth_date: updatedBirthDate,
+                            position: updatedPosition,
+                            experience: updatedExperience,
+                            email: updatedEmail
+                        })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                location.reload(); // Перезагрузка страницы после успешного обновления профиля
+                            } else {
+                                alert('Ошибка при сохранении профиля');
+                            }
+                        });
+                });
+            });
+
+            $(document).ready(function () {
+                $("#logout").click(function () {
+                    $.ajax({
+                        type: "GET",
+                        url: "/logout",
+                        success: function (response) {
+                            // Обработка успешного ответа, если нужно
+                            console.log(response);
+                            window.location.href = "/"; // Перенаправление на главную страницу после выхода
+                        },
+                        error: function (error) {
+                            // Обработка ошибок, если нужно
+                            console.error(error);
+                            alert("Error during logout. Please try again.");
+                        }
+                    });
+                });
+            });
+
+            $(document).ready(function () {
+                $("#uploadImageButton").click(function () {
+                    // Показать элемент для выбора файла
+                    $("#profileImageInput").show();
+                });
+
+                $("#profileImageInput").change(function () {
+                    var fileInput = this;
+                    var file = fileInput.files[0];
+
+                    if (file) {
+                        if (file.type !== "image/jpeg") {
+                            $("#message").html('<div class="alert alert-danger">Please upload a .jpg file.</div>');
+                            return;
+                        }
+
+                        var formData = new FormData();
+                        formData.append('profile_image', file);
+
+                        $.ajax({
+                            type: "PUT",
+                            url: "/update_profile_image",
+                            data: formData,
+                            contentType: false,
+                            processData: false,
+                            success: function (response) {
+                                console.log(response);
+                                $("#message").html('<div class="alert alert-success">Profile image updated successfully!</div>');
+                            },
+                            error: function (error) {
+                                console.error(error);
+                                $("#message").html('<div class="alert alert-danger">Error during image upload. Please try again.</div>');
+                            }
+                        });
+                    } else {
+                        $("#message").html('<div class="alert alert-danger">Please select an image to upload.</div>');
+                    }
+                    setTimeout(function () {
+                        window.location.href = "/profile";
+                    }, 1000);
+                });
+            });
+            $(document).ready(function () {
+                $("#showPasswordFieldsBtn").click(function () {
+                    $("#passwordFields").show();  // Показать поля для ввода пароля
+                });
+
+                $("#changePasswordBtn").click(function () {
+                    var oldPassword = $("#oldPassword").val();
+                    var newPassword = $("#newPassword").val();
+
+                    if (!oldPassword || !newPassword) {
+                        $("#message").html('<div class="alert alert-danger">Please fill in both fields.</div>');
+                        return;
+                    }
+
+                    $.ajax({
+                        type: "PUT",
+                        url: "/change_password",
+                        data: {
+                            old_password: oldPassword,
+                            new_password: newPassword
+                        },
+                        success: function (response) {
+                            console.log(response);
+                            $("#message").html('<div class="alert alert-success">Password changed successfully!</div>');
+                        },
+                        error: function (error) {
+                            console.error(error);
+                            $("#message").html('<div class="alert alert-danger">Error changing password. Please try again.</div>');
+                        }
+                    });
+                    setTimeout(function () {
+                        window.location.href = "/profile";
+                    }, 500);
+                });
+            });
+            $(document).ready(function () {
+                $("#deleteAccountBtn").click(function () {
+                    if (confirm("Are you sure you want to delete your account?")) {
+                        $.ajax({
+                            type: "DELETE",
+                            url: "/delete_account",
+                            success: function (response) {
+                                console.log(response);
+                                $("#message").html('<div class="alert alert-success">Your account has been deleted.</div>');
+                                // Дополнительные действия, если необходимы
+                            },
+                            error: function (error) {
+                                console.error(error);
+                                $("#message").html('<div class="alert alert-danger">Error deleting account. Please try again.</div>');
+                            }
+
+                        });
+                        setTimeout(function () {
+                            window.location.href = "/";
+                        }, 500);
+                    }
+                });
+            });
+            $(".compare-btn").click(function () {
+                // Получение имени изображения из атрибута data-image-name
+                var imageName = $(this).closest('.image-div').find('img').data('image-name');
+
+                // Проверка на существование imageName
+                if (imageName) {
+                    // Перенаправление на страницу /try_compare с передачей имени изображения в качестве параметра
+                    window.location.href = "/compare?image=" + imageName;
+                } else {
+                    console.error("Image name is not defined.");
+                }
+            });
+
+        });
+        
+    </script>
+
+</body>
+
+</html>
+
+
+{% endblock %}

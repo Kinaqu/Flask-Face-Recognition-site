@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Try Compare{% endblock %}
+
+{% block content %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <style>
+        .yourface{
+            position: absolute;
+            top: 200px;
+            left: 100px;
+        }
+
+        .hackerface{
+            position: absolute;
+            top:200px;
+            right: 100px;
+        }
+        .compare-div{
+            position: absolute;
+            top:400px;
+            left: 47.5%;
+        }
+
+    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Comparison</title>
+</head>
+
+<body>
+
+    <div class="yourface">    <canvas id="videoCanvas" width="640" height="480"></canvas></div>
+    <div class="hackerface"><img id="compare-image" src="{{ url_for('static', filename='uploads/') }}{{ filename }}" alt="Compare Image"></div>
+    <div class="compare-div">    <button id="compare-btn" onclick="sendFaceImagesToServer()" class="btn btn-primary">Compare</button>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('videoCanvas');
+        const context = canvas.getContext('2d');
+        const video = document.createElement('video');
+
+        // Запускаем веб-камеру и отображаем видео на canvas
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+                video.play();
+
+                // Захватываем изображение каждые 2 секунды (или другой интервал по вашему выбору)
+                setInterval(() => {
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                }, 40);
+            });
+
+        async function sendFaceImagesToServer() {
+            try {
+                let canvas = document.getElementById('videoCanvas');
+                let canvasBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+
+                let compareImage = document.getElementById('compare-image');
+                let compareBlob = await fetch(compareImage.src).then(r => r.blob());
+
+                let formData = new FormData();
+                formData.append('canvas_image', canvasBlob, 'canvas_image.png');
+                formData.append('compare_image', compareBlob, 'compare_image.png');
+
+                $.ajax({
+                    type: 'POST',
+                    url: '/try_compare',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function (response) {
+                        if (response.match) {
+                            alert('Сходство ваших лиц: '+ response.similarity_percentage +'%');
+                            // Здесь можно добавить логику для обработки совпадения
+                        } else {
+                            console.log('No face match found.');
+                            // Здесь можно добавить логику для обработки отсутствия совпадения
+                        }
+                    },
+                    error: function (error) {
+                        alert('Face not found');
+                    }
+                });
+            } catch (error) {
+                console.error('Error in sending face images:', error);
+            }
+        }
+
+    </script>
+
+</body>
+
+</html>
+
+{% endblock %}

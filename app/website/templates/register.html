@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign Up{% endblock %}
+
+{% block content %}
+<style>
+    .central_div {
+        position: absolute;
+        top: 20%;
+        left: 31%;
+        background-color: #6d9265;
+        height: 400px;
+        width: 640px;
+        border-top-left-radius: 2%;
+        border-top-right-radius: 2%;
+
+    }
+
+    .bottom_div {
+        position: absolute;
+        top: 100%;
+        width: 100%;
+        height: 20%;
+        background-color: #ECE3CE;
+        border-radius: 2px;
+
+    }
+
+    #startVideoButton {
+        position: absolute;
+        bottom: 21%;
+        left: 43%;
+    }
+
+    #captureFaceButton {
+        position: absolute;
+        bottom: 21%;
+        left: 42%;
+    }
+</style>    
+<h1>Sign Up</h1>
+<div class="main_div">
+    <h2 style="text-align: center; color: #000000; margin-top: 73px;   ">Для регистрации нажмите на кнопку ниже и сфотографируйте лицо</h2>
+    <div class="central_div">
+        <canvas id="videoCanvas" width="640" height="480" ></canvas>
+        <div class="bottom_div">
+            <button type="button" id="startVideoButton" onclick="startVideo()" class="btn btn-primary">Start
+                Video</button>
+            <button type="button" id="captureFaceButton" onclick="captureFace()" style="display: none;"
+                class="btn btn-primary">Capture Face</button>
+        </div>
+    </div>
+</div>
+<!-- Modal for username and password input -->
+<div class="modal" id="loginModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Enter Details</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="signupForm">
+                    <div class="form-group text-center">
+                        <label for="username">Username:</label>
+                        <input type="text" class="form-control" name="username" id="username" required>
+                    </div>
+                    <div class="form-group text-center">
+                        <label for="password">Password:</label>
+                        <input type="password" class="form-control" name="password" id="password" required>
+                    </div>
+                    <div id="alertContainer" class="text-center"></div>
+                    <input type="hidden" name="image" id="image">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="confirmLogin()">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Include necessary scripts at the end -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+
+
+<script type="text/javascript">
+    var capturing = false;
+
+    var videoCanvas = document.getElementById('videoCanvas');
+    var videoContext = videoCanvas.getContext('2d');
+
+    function startVideo() {
+        var startButton = document.getElementById('startVideoButton');
+        var captureButton = document.getElementById('captureFaceButton');
+
+        startButton.style.display = 'none';
+        captureButton.style.display = 'block';
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function (stream) {
+                var video = document.createElement('video');
+                video.srcObject = stream;
+                video.play();
+
+                var canvas = document.getElementById('videoCanvas');
+                var context = canvas.getContext('2d');
+
+                // Отрисовка каждого кадра видео на canvas
+                video.addEventListener('loadedmetadata', function () {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+
+                    capturing = true;
+                    drawFrame();
+                });
+
+                function drawFrame() {
+                    if (capturing) {
+                        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        requestAnimationFrame(drawFrame);
+                    }
+                }
+            })
+            .catch(function (err) {
+                console.error('Error accessing webcam: ', err);
+            });
+    }
+
+
+
+    function captureFace() {
+        if (capturing) {
+            var canvas = document.getElementById('videoCanvas');
+            var imageData = canvas.toDataURL('image/jpeg');
+
+            document.getElementById('image').value = imageData;
+
+            $('#loginModal').modal('show');
+        }
+    }
+
+
+    function confirmLogin() {
+        // Используйте форму для отправки данных
+        var form = document.getElementById('signupForm');
+        var formData = new FormData(form);
+
+        // Отправка данных на сервер для сохранения в базе данных
+        $.ajax({
+            type: "POST",
+            url: "/signup",
+            data: formData,
+            contentType: false,
+            processData: false,
+            success: function (response) {
+                // Handle the server response if needed
+                console.log(response);
+                var alertContainer = document.getElementById('alertContainer');
+                alertContainer.innerHTML = '<div class="alert alert-success">Регистрация прошла успешно!</div>';
+                capturing = false;
+            },
+            error: function (error) {
+                console.error(error);
+                alert("Error during signup. Please try again.");
+            }
+        });
+
+        // Закрытие модального окна
+        $('#loginModal').modal('hide');
+
+        setTimeout(function () {
+            window.location.href = "/";
+        }, 3000);
+    }
+
+</script>
+{% endblock %}
